@@ -1,9 +1,5 @@
 rules_version = '2';
 
-function isValidEmail(email) {
-	return email is string && email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,5}$')
-}
-
 function isValidRunner() {
 	return request.resource.data.name is string &&
   			request.resource.data.number is number;
