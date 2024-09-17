@@ -1,4 +1,4 @@
-# 24-Stunden-Lauf App Firebase Backend
+# 24-Stunden-Lauf App v2 Firebase Backend
 
 ## Setup
 
