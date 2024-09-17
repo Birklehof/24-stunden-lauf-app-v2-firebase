@@ -2,7 +2,7 @@
   "parameters": {
     "houses": {
       "defaultValue": {
-        "value": "[{\"name\":\"Extern (Kollegium)\",\"abbreviation\":\"ExtKol\"},{\"name\":\"Extern (Schüler)\",\"abbreviation\":\"ExtS\"},{\"name\":\"Altbirkle\",\"abbreviation\":\"Ab\"},{\"name\":\"Kopphaus\",\"abbreviation\":\"Kh\"},{\"name\":\"Neubirkle\",\"abbreviation\":\"Nb\"},{\"name\":\"Neuen Hirschen Ost\",\"abbreviation\":\"NHO\"},{\"name\":\"Neuen Hirschen West\",\"abbreviation\":\"NHW\"},{\"name\":\"Petersbau\",\"abbreviation\":\"Pb\"},{\"name\":\"Saalbau\",\"abbreviation\":\"Sb\"},{\"name\":\"Studio\",\"abbreviation\":\"St\"},{\"name\":\"Unterhaus\",\"abbreviation\":\"Uh\"},{\"name\":\"Wolfsburg Süd\",\"abbreviation\":\"WobS\"},{\"name\":\"Wolfsburg Nord\",\"abbreviation\":\"WobN\"}]"
+        "value": "[{\"name\":\"Extern (Kollegium)\",\"abbreviation\":\"ExtKol\"},{\"name\":\"Extern (Schüler)\",\"abbreviation\":\"ExtS\"},{\"name\":\"Altbirkle\",\"abbreviation\":\"Ab\"},{\"name\":\"Kopphaus\",\"abbreviation\":\"Kh\"},{\"name\":\"Neubirkle\",\"abbreviation\":\"Nb\"},{\"name\":\"Neuen Hirschen Ost\",\"abbreviation\":\"NHO\"},{\"name\":\"Neuen Hirschen West\",\"abbreviation\":\"NHW\"},{\"name\":\"Petersbau\",\"abbreviation\":\"Pb\"},{\"name\":\"Saalbau\",\"abbreviation\":\"Sb\"},{\"name\":\"Studio\",\"abbreviation\":\"St\"},{\"name\":\"Unterhaus\",\"abbreviation\":\"Uh\"},{\"name\":\"Wolfsburg Süd\",\"abbreviation\":\"WobS\"},{\"name\":\"Wolfsburg Nord\",\"abbreviation\":\"WobN\"}, {\"name\":\"Hahnenhaus\",\"abbreviation\":\"Hah\"}]"
       },
       "description": "List of objects for the houses. Every object must have a name and an abbreviation property.",
       "valueType": "STRING"
@@ -23,12 +23,6 @@
     }
   },
   "version": {
-    "versionNumber": "4",
-    "updateTime": "2024-01-04T11:12:17.996562Z",
-    "updateUser": {
-      "email": "pauljustus279@gmail.com"
-    },
-    "updateOrigin": "CONSOLE",
-    "updateType": "INCREMENTAL_UPDATE"
+    "versionNumber": "5"
   }
 }
