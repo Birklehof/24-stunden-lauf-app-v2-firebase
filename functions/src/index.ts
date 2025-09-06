@@ -137,3 +137,57 @@ export const resetLastLapCreatedAt = onDocumentDeleted(
     });
   }
 );
+
+export const createRunner = onCall(
+  {
+    region: "europe-west1",
+    maxInstances: 3,
+  },
+  async (request) => {
+    // Check if the user is authenticated
+    if (!request.auth || request.auth.token.role !== "assistant") {
+      throw new HttpsError("unauthenticated", "Authentication required.");
+    }
+
+    // Ensure the request contains the 'name' field
+    const name = request.data.name as string;
+    if (!name) {
+      throw new HttpsError("invalid-argument", "Missing field: name");
+    }
+
+    const firestore = getFirestore();
+
+    const newestRunnerRef = firestore
+      .collection("runners")
+      .orderBy("number", "desc")
+      .limit(1);
+
+    try {
+      const newRunner = await firestore.runTransaction(
+        async (transaction) => {
+          const newestRunnerDoc = await transaction.get(newestRunnerRef);
+
+          const newNumber = newestRunnerDoc.empty ?
+            1 :
+            newestRunnerDoc.docs[0].data().number + 1;
+
+          const newRunner = {
+            name,
+            number: newNumber,
+            type: "guest",
+          };
+
+          const newRunnerRef = firestore.collection("runners").doc();
+          transaction.set(newRunnerRef, newRunner);
+
+          return newRunner;
+        }
+      );
+
+      return newRunner;
+    } catch (err) {
+      logger.error(err);
+      throw new HttpsError("internal", "Internal server error");
+    }
+  }
+);

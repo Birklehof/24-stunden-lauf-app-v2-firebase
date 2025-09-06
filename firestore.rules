@@ -1,10 +1,5 @@
 rules_version = '2';
 
-function isValidRunner() {
-	return request.resource.data.name is string &&
-  			request.resource.data.number is number;
-}
-
 service cloud.firestore {
   match /databases/(default)/documents {
     match /laps/{lap} {
@@ -13,7 +8,6 @@ service cloud.firestore {
     }
 
     match /runners/{runner} {
-      allow create: if request.auth.token.role == 'assistant' && isValidRunner();
       allow read: if request.auth != null;
     }
   }
