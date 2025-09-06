@@ -1,8 +1,8 @@
-import { logger } from "firebase-functions";
-import { HttpsError, onCall } from "firebase-functions/v2/https";
-import { initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { onDocumentDeleted } from "firebase-functions/v2/firestore";
+import {logger} from "firebase-functions";
+import {HttpsError, onCall} from "firebase-functions/v2/https";
+import {initializeApp} from "firebase-admin/app";
+import {getFirestore} from "firebase-admin/firestore";
+import {onDocumentDeleted} from "firebase-functions/v2/firestore";
 
 initializeApp();
 
@@ -94,7 +94,8 @@ export const createLap = onCall(
         // Return the new lap
         return {
           id: newLapRef.id,
-          ...newLap,
+          runnerId: newLap.runnerId,
+          createdAt: newLap.createdAt.getTime(),
         };
       });
 
