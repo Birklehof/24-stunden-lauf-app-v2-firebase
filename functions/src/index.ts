@@ -55,7 +55,9 @@ export const createLap = onCall(
 
     const runner = {
       id: runnerQuery.docs[0].id,
-      ...runnerQuery.docs[0].data(),
+      name: runnerQuery.docs[0].data().name,
+      number: runnerQuery.docs[0].data().number,
+      type: runnerQuery.docs[0].data().type,
     };
 
     const runnerRef = firestore.doc(`runners/${runner.id}`);
@@ -79,6 +81,8 @@ export const createLap = onCall(
         const newLap = {
           runnerId: runner.id,
           createdAt: now,
+          name: runner.name,
+          number: runner.number,
         };
 
         // Add the new lap
@@ -88,7 +92,7 @@ export const createLap = onCall(
         // Update the runner
         transaction.update(runnerRef, {
           lastLapCreatedAt: now,
-          laps: runnerDoc.data()?.laps + 1,
+          laps: (runnerDoc.data()?.laps || 0) + 1,
         });
 
         // Return the new lap
@@ -99,7 +103,12 @@ export const createLap = onCall(
         };
       });
 
-      return newLap;
+      return {
+        id: newLap.id,
+        runnerId: newLap.runnerId,
+        createdAt: newLap.createdAt,
+        runner,
+      };
     } catch (err) {
       if (err instanceof LapTooEarlyError) {
         throw new HttpsError(
@@ -131,17 +140,33 @@ export const resetLastLapCreatedAt = onDocumentDeleted(
       return;
     }
 
-    await firestore.doc(`runners/${runnerId}`).update({
-      lastLapCreatedAt: null,
-      laps: data.laps - 1,
-    });
+    const runnerRef = firestore.doc(`runners/${runnerId}`);
+
+    try {
+      await firestore.runTransaction(async (transaction) => {
+        const runnerDoc = await transaction.get(runnerRef);
+
+        if (!runnerDoc.exists) {
+          return;
+        }
+
+        transaction.update(runnerRef, {
+          lastLapCreatedAt: null,
+          laps: ((runnerDoc.data()?.laps || 0) - 1) >= 0 ?
+            (runnerDoc.data()?.laps || 0) - 1 :
+            0,
+        });
+      });
+    } catch (err) {
+      logger.error(err);
+    }
   }
 );
 
 export const createRunner = onCall(
   {
     region: "europe-west1",
-    maxInstances: 3,
+    maxInstances: 1,
   },
   async (request) => {
     // Check if the user is authenticated
@@ -175,6 +200,7 @@ export const createRunner = onCall(
             name,
             number: newNumber,
             type: "guest",
+            laps: 0,
           };
 
           const newRunnerRef = firestore.collection("runners").doc();
