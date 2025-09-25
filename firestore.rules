@@ -3,7 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/(default)/documents {
     match /laps/{lap} {
-      allow delete: if request.auth.token.role == 'assistant';
       allow read: if request.auth != null;
     }
 
