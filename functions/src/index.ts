@@ -22,7 +22,7 @@ class LapTooEarlyError extends Error {
 export const createLap = onCall(
   {
     region: "europe-west1",
-    minInstances: 0, // FIXME: Set to 0 after release
+    minInstances: 4, // FIXME: Set to 0 after release
     maxInstances: 10,
   },
   async (request) => {
@@ -68,7 +68,7 @@ export const createLap = onCall(
         const lastLapCreatedAt = runnerDoc.data()?.lastLapCreatedAt;
 
         // Check if the last lap was less than 2 minutes ago
-        if (lastLapCreatedAt) {
+        if (lastLapCreatedAt && request.data.ignoreCooldown !== true) {
           const lastLapDate = lastLapCreatedAt.toDate();
 
           if (now.getTime() - lastLapDate.getTime() < 2 * 60 * 1000) {
@@ -127,7 +127,7 @@ export const createLap = onCall(
 export const deleteLap = onCall(
   {
     region: "europe-west1",
-    minInstances: 0, // FIXME: Set to 0 after release
+    minInstances: 2, // FIXME: Set to 0 after release
     maxInstances: 10,
   },
   async (request) => {
