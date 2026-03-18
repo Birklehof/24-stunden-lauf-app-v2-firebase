@@ -21,7 +21,7 @@ class LapTooEarlyError extends Error {
 
 export const createLap = onCall(
   {
-    region: "europe-west1",
+    region: "europe-west3",
     minInstances: 0, // FIXME: Set to 0 after release
     maxInstances: 10,
   },
@@ -126,7 +126,7 @@ export const createLap = onCall(
 
 export const deleteLap = onCall(
   {
-    region: "europe-west1",
+    region: "europe-west3",
     minInstances: 0, // FIXME: Set to 0 after release
     maxInstances: 10,
   },
@@ -187,7 +187,7 @@ export const deleteLap = onCall(
 
 export const createRunner = onCall(
   {
-    region: "europe-west1",
+    region: "europe-west3",
     maxInstances: 1,
   },
   async (request) => {
