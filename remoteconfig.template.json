@@ -2,14 +2,14 @@
   "parameters": {
     "houses": {
       "defaultValue": {
-        "value": "[{\"name\":\"Extern (Kollegium)\",\"abbreviation\":\"ExtKol\"},{\"name\":\"Extern (Schüler)\",\"abbreviation\":\"ExtS\"},{\"name\":\"Altbirkle\",\"abbreviation\":\"Ab\"},{\"name\":\"Kopphaus\",\"abbreviation\":\"Kh\"},{\"name\":\"Neubirkle\",\"abbreviation\":\"Nb\"},{\"name\":\"Neuen Hirschen Ost\",\"abbreviation\":\"NHO\"},{\"name\":\"Neuen Hirschen West\",\"abbreviation\":\"NHW\"},{\"name\":\"Petersbau\",\"abbreviation\":\"Pb\"},{\"name\":\"Saalbau\",\"abbreviation\":\"Sb\"},{\"name\":\"Studio\",\"abbreviation\":\"St\"},{\"name\":\"Unterhaus\",\"abbreviation\":\"Uh\"},{\"name\":\"Wolfsburg Süd\",\"abbreviation\":\"WobS\"},{\"name\":\"Wolfsburg Nord\",\"abbreviation\":\"WobN\"}, {\"name\":\"Hahnenhaus\",\"abbreviation\":\"Hah\"}]"
+        "value": "[{\"name\":\"Extern (Kollegium)\",\"abbreviation\":\"ExtKol\"},{\"name\":\"Extern (Schüler)\",\"abbreviation\":\"ExtS\"},{\"name\":\"Altbirkle\",\"abbreviation\":\"Ab\"},{\"name\":\"Kopphaus\",\"abbreviation\":\"Kh\"},{\"name\":\"Neubirkle\",\"abbreviation\":\"Nb\"},{\"name\":\"Neuer Hirschen Ost\",\"abbreviation\":\"NHO\"},{\"name\":\"Neuer Hirschen West\",\"abbreviation\":\"NHW\"},{\"name\":\"Petersbau\",\"abbreviation\":\"Pb\"},{\"name\":\"Saalbau\",\"abbreviation\":\"Sb\"},{\"name\":\"Studio\",\"abbreviation\":\"St\"},{\"name\":\"Unterhaus\",\"abbreviation\":\"Uh\"},{\"name\":\"Wolfsburg Süd\",\"abbreviation\":\"WobS\"},{\"name\":\"Wolfsburg Nord\",\"abbreviation\":\"WobN\"}, {\"name\":\"Hahnenhaus\",\"abbreviation\":\"Hah\"}]"
       },
       "description": "List of objects for the houses. Every object must have a name and an abbreviation property.",
       "valueType": "STRING"
     },
     "classes": {
       "defaultValue": {
-        "value": "[\"5\",\"6\",\"7\",\"8\",\"9\",\"10A\",\"10B\",\"11\",\"Q1\",\"Q2\"]"
+        "value": "[\"5\",\"6\",\"7\",\"8\",\"9\",\"10A\",\"10B\",\"11 (ABG)\", \"11\",\"Q1\",\"Q2\"]"
       },
       "description": "List of strings for the classes.",
       "valueType": "STRING"
