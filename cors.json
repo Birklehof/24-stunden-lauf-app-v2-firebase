@@ -1,7 +1,0 @@
-[
-    {
-        "origin": ["*.birklehof.space"],
-        "method": ["*"],
-        "maxAgeSeconds": 3600
-    }
-]

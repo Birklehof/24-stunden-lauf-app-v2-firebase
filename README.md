@@ -14,7 +14,3 @@
 oder
 
 - `firebase deploy`: Deployt alles
-
-## Set CORS
-
-`gsutil cors set cors.json gs://stunden-lauf.appspot.com`
