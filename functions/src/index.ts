@@ -1,23 +1,87 @@
 import {logger} from "firebase-functions";
-import {HttpsError, onCall} from "firebase-functions/v2/https";
+import {CallableRequest, HttpsError, onCall} from "firebase-functions/v2/https";
 import {initializeApp} from "firebase-admin/app";
-import {getFirestore} from "firebase-admin/firestore";
+import {getFirestore, Timestamp} from "firebase-admin/firestore";
 
 initializeApp();
 
+const firestore = getFirestore();
+
 /**
- * Error that is thrown when a lap is created
- * less than 2 minutes after the last lap.
+ * Ensures that the caller is authenticated and has the required role.
+ *
+ * @param {CallableRequest} request - The callable function request.
+ * @param {string} role - The required Firebase Auth custom claim role.
+ * @throws {HttpsError} If the caller is not authenticated
+ *                      or lacks the required role.
  */
-class LapTooEarlyError extends Error {
-  /**
-   * @param {sting} msg - The error message (never used)
-   */
-  constructor(msg: string) {
-    super(msg);
-    Object.setPrototypeOf(this, LapTooEarlyError.prototype);
+function requireRole(request: CallableRequest, role: string): void {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "Authentifizierung erforderlich."
+    );
+  }
+
+  if (request.auth.token.role !== role) {
+    throw new HttpsError(
+      "permission-denied",
+      "Zugriff verweigert."
+    );
   }
 }
+
+/**
+ * Validates that a value is a positive integer.
+ *
+ * @param {unknown} value - The value to validate.
+ * @param {string} field - The name of the field being validated.
+ * @return {number} The validated positive integer.
+ * @throws {HttpsError} If the value is not a positive integer.
+ */
+function requirePositiveInteger(
+  value: unknown,
+  field: string
+): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value <= 0
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      `Ungültiger Wert für Feld '${field}'.`
+    );
+  }
+
+  return value;
+}
+
+/**
+ * Validates that a value is a string.
+ *
+ * @param {unknown} value - The value to validate.
+ * @param {string} field - The name of the field being validated.
+ * @return {string} The validated string
+ * @throws {HttpsError} If the value is not a string.
+ */
+function requireString(
+  value: unknown,
+  field: string
+): string {
+  if (
+    typeof value !== "string" ||
+    value.trim().length === 0
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      `Ungültiger Wert für Feld '${field}'.`
+    );
+  }
+
+  return value.trim();
+}
+
 
 export const createLap = onCall(
   {
@@ -26,22 +90,11 @@ export const createLap = onCall(
     maxInstances: 10,
   },
   async (request) => {
-    // Check if the user is authenticated
-    if (!request.auth || request.auth.token.role !== "assistant") {
-      throw new HttpsError("unauthenticated", "Authentication required.");
-    }
+    requireRole(request, "assistant");
 
-    // Ensure the request contains the 'number' field
-    const number = request.data.number as number;
-    if (!number) {
-      throw new HttpsError("invalid-argument", "Missing field: number");
-    }
+    // Ensure the request contains the 'numer' field with a positive integer
+    const number = requirePositiveInteger(request.data.number, "Startnummer");
 
-    const now = new Date();
-
-    const firestore = getFirestore();
-
-    // Check if there is a runner with the specified number
     const runnerQuery = await firestore
       .collection("runners")
       .where("number", "==", number)
@@ -52,37 +105,39 @@ export const createLap = onCall(
       throw new HttpsError("not-found", "Läufer nicht gefunden.");
     }
 
-    const runner = {
-      id: runnerQuery.docs[0].id,
-      name: runnerQuery.docs[0].data().name,
-      number: runnerQuery.docs[0].data().number,
-      type: runnerQuery.docs[0].data().type,
-    };
-
-    const runnerRef = firestore.doc(`runners/${runner.id}`);
+    const runnerRef = runnerQuery.docs[0].ref;
 
     try {
       const newLap = await firestore.runTransaction(async (transaction) => {
+        // Check if there is a runner with the specified number
         const runnerDoc = await transaction.get(runnerRef);
-
-        const lastLapCreatedAt = runnerDoc.data()?.lastLapCreatedAt;
+        const runnerData = runnerDoc.data();
+        if (!runnerDoc.exists || !runnerData) {
+          throw new HttpsError("not-found", "Läufer nicht gefunden.");
+        }
+        const now = Timestamp.now();
 
         // Check if the last lap was less than 2 minutes ago
-        if (lastLapCreatedAt && request.data.ignoreCooldown !== true) {
-          const lastLapDate = lastLapCreatedAt.toDate();
+        if (runnerData.lastLapCreatedAt &&
+          request.data.ignoreCooldown !== true) {
+          const elapsed =
+            now.toMillis() - runnerData.lastLapCreatedAt.toMillis();
 
-          if (now.getTime() - lastLapDate.getTime() < 2 * 60 * 1000) {
-            throw new LapTooEarlyError("Last lap less than 2 minutes ago.");
+          if (elapsed < 2 * 60 * 1000) {
+            throw new HttpsError(
+              "failed-precondition",
+              "Letzte Runde weniger als 2 Minuten her."
+            );
           }
         }
 
         // Create a new lap
         const newLap = {
-          runnerId: runner.id,
+          runnerId: runnerRef.id,
           createdAt: now,
           runnerData: {
-            name: runner.name,
-            number: runner.number,
+            name: runnerData.name,
+            number: runnerData.number,
           },
         };
 
@@ -91,16 +146,22 @@ export const createLap = onCall(
         transaction.set(newLapRef, newLap);
 
         // Update the runner
-        await transaction.update(runnerRef, {
+        transaction.update(runnerRef, {
           lastLapCreatedAt: now,
-          laps: (runnerDoc.data()?.laps || 0) + 1,
+          laps: (runnerData.laps || 0) + 1,
         });
 
         // Return the new lap
         return {
           id: newLapRef.id,
           runnerId: newLap.runnerId,
-          createdAt: newLap.createdAt.getTime(),
+          createdAt: newLap.createdAt.toMillis(),
+          runner: {
+            id: runnerRef.id,
+            name: runnerData.name,
+            number: runnerData.number,
+            laps: runnerData.laps || 0,
+          },
         };
       });
 
@@ -108,18 +169,18 @@ export const createLap = onCall(
         id: newLap.id,
         runnerId: newLap.runnerId,
         createdAt: newLap.createdAt,
-        runner,
+        runner: newLap.runner,
       };
     } catch (err) {
-      if (err instanceof LapTooEarlyError) {
-        throw new HttpsError(
-          "failed-precondition",
-          "Letzte Runde weniger als 2 Minuten her."
-        );
-      } else {
-        logger.error(err);
-        throw new HttpsError("internal", "Internal server error");
+      if (err instanceof HttpsError) {
+        throw err;
       }
+
+      logger.error("Failed to create lap", {
+        error: err,
+        number: number,
+      });
+      throw new HttpsError("internal", "Interner Serverfehler.");
     }
   }
 );
@@ -131,19 +192,10 @@ export const deleteLap = onCall(
     maxInstances: 10,
   },
   async (request) => {
-    // Check if the user is authenticated
-    // Check if the user is authenticated
-    if (!request.auth || request.auth.token.role !== "assistant") {
-      throw new HttpsError("unauthenticated", "Authentication required.");
-    }
+    requireRole(request, "assistant");
 
     // Ensure the request contains the 'lapId' field
-    const lapId = request.data.lapId as string;
-    if (!lapId) {
-      throw new HttpsError("invalid-argument", "Missing field: lapId");
-    }
-
-    const firestore = getFirestore();
+    const lapId = requireString(request.data.lapId, "lapId");
 
     const lapRef = firestore.doc(`laps/${lapId}`);
 
@@ -155,32 +207,47 @@ export const deleteLap = onCall(
           throw new HttpsError("not-found", "Runde nicht gefunden.");
         }
 
+        const lapData = lapDoc.data();
         const runnerId = lapDoc.data()?.runnerId;
+        const lapCreatedAt = lapData?.createdAt;
 
-        if (!runnerId) {
-          await transaction.delete(lapRef);
+        // If the lap data is invalid delete the lap
+        if (!runnerId || !(lapCreatedAt instanceof Timestamp)) {
+          transaction.delete(lapRef);
           return;
         }
 
         const runnerRef = firestore.doc(`runners/${runnerId}`);
         const runnerDoc = await transaction.get(runnerRef);
+        const runnerData = runnerDoc.data();
 
-        if (!runnerDoc.exists) {
+        if (!runnerDoc.exists || !runnerData) {
           throw new HttpsError("not-found", "Läufer nicht gefunden.");
         }
 
-        await transaction.delete(lapRef);
-        await transaction.update(runnerRef, {
-          lastLapCreatedAt: null,
-          laps:
-            (runnerDoc.data()?.laps || 0) - 1 >= 0 ?
-              (runnerDoc.data()?.laps || 0) - 1 :
-              0,
+        const isLatestLap =
+          runnerData.lastLapCreatedAt instanceof Timestamp &&
+          runnerData.lastLapCreatedAt.isEqual(lapCreatedAt);
+
+        transaction.delete(lapRef);
+        // Only reset lastLapCreatedAt if the deleted lap was the last lap
+        transaction.update(runnerRef, {
+          laps: Math.max(0, (runnerData.laps ?? 0) - 1),
+          ...(isLatestLap ?
+            {lastLapCreatedAt: null} :
+            {}),
         });
       });
     } catch (err) {
-      logger.error(err);
-      throw new HttpsError("internal", "Internal server error");
+      if (err instanceof HttpsError) {
+        throw err;
+      }
+
+      logger.error("Failed to delete lap", {
+        error: err,
+        lapId: lapId,
+      });
+      throw new HttpsError("internal", "Interner Serverfehler.");
     }
   }
 );
@@ -191,20 +258,11 @@ export const createRunner = onCall(
     maxInstances: 1,
   },
   async (request) => {
-    // Check if the user is authenticated
-    if (!request.auth || request.auth.token.role !== "assistant") {
-      throw new HttpsError("unauthenticated", "Authentication required.");
-    }
+    requireRole(request, "assistant");
 
     // Ensure the request contains the 'name' field
-    const name = request.data.name as string;
-    if (!name) {
-      throw new HttpsError("invalid-argument", "Missing field: name");
-    }
-
+    const name = requireString(request.data.name, "Name");
     const email = request.data.email as string | undefined;
-
-    const firestore = getFirestore();
 
     const newestRunnerRef = firestore
       .collection("runners")
@@ -244,8 +302,18 @@ export const createRunner = onCall(
 
       return newRunner;
     } catch (err) {
-      logger.error(err);
-      throw new HttpsError("internal", "Internal server error");
+      if (err instanceof HttpsError) {
+        throw err;
+      }
+
+      logger.error("Failed to create runner", {
+        error: err,
+        runner: {
+          name: name,
+          email: email,
+        },
+      });
+      throw new HttpsError("internal", "Interner Serverfehler.");
     }
   }
 );
