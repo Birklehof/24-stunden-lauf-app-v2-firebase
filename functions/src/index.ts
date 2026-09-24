@@ -160,7 +160,7 @@ export const createLap = onCall(
             id: runnerRef.id,
             name: runnerData.name,
             number: runnerData.number,
-            laps: runnerData.laps || 0,
+            laps: (runnerData.laps || 0) + 1,
           },
         };
       });
