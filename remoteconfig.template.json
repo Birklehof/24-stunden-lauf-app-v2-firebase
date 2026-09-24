@@ -9,7 +9,7 @@
     },
     "classes": {
       "defaultValue": {
-        "value": "[\"5\",\"6\",\"7\",\"8\",\"9\",\"10A\",\"10B\",\"11 (ABG)\", \"11\",\"Q1\",\"Q2\"]"
+        "value": "[\"5\",\"6\",\"7\",\"8\",\"9\",\"10A\",\"10B\",\"11\",\"Q1\",\"Q2\"]"
       },
       "description": "List of strings for the classes.",
       "valueType": "STRING"
@@ -19,7 +19,7 @@
         "value": "660"
       },
       "description": "Distance of one \"Birklehofrunde\" in meters.",
-      "valueType": "STRING"
+      "valueType": "NUMBER"
     }
   },
   "version": {
