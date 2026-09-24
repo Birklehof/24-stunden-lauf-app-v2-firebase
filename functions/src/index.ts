@@ -15,15 +15,27 @@ const firestore = getFirestore();
  * @throws {HttpsError} If the caller is not authenticated
  *                      or lacks the required role.
  */
-function requireRole(request: CallableRequest, role: string): void {
+function requireAuthenticated(request: CallableRequest): void {
   if (!request.auth) {
     throw new HttpsError(
       "unauthenticated",
       "Authentifizierung erforderlich."
     );
   }
+}
 
-  if (request.auth.token.role !== role) {
+/**
+ * Ensures that the caller is authenticated and has the required role.
+ *
+ * @param {CallableRequest} request - The callable function request.
+ * @param {string} role - The required Firebase Auth custom claim role.
+ * @throws {HttpsError} If the caller is not authenticated
+ *                      or lacks the required role.
+ */
+function requireRole(request: CallableRequest, role: string): void {
+  requireAuthenticated(request);
+
+  if (request.auth?.token.role !== role) {
     throw new HttpsError(
       "permission-denied",
       "Zugriff verweigert."
@@ -95,21 +107,10 @@ export const createLap = onCall(
     // Ensure the request contains the 'numer' field with a positive integer
     const number = requirePositiveInteger(request.data.number, "Startnummer");
 
-    const runnerQuery = await firestore
-      .collection("runners")
-      .where("number", "==", number)
-      .limit(1)
-      .get();
-
-    if (runnerQuery.empty) {
-      throw new HttpsError("not-found", "Läufer nicht gefunden.");
-    }
-
-    const runnerRef = runnerQuery.docs[0].ref;
-
     try {
       const newLap = await firestore.runTransaction(async (transaction) => {
         // Check if there is a runner with the specified number
+        const runnerRef = firestore.doc(`runners/${number}`);
         const runnerDoc = await transaction.get(runnerRef);
         const runnerData = runnerDoc.data();
         if (!runnerDoc.exists || !runnerData) {
@@ -294,7 +295,9 @@ export const createRunner = onCall(
           newRunner = {...newRunner, email};
         }
 
-        const newRunnerRef = firestore.collection("runners").doc();
+        const newRunnerRef = firestore
+          .collection("runners")
+          .doc(String(newNumber));
         transaction.set(newRunnerRef, newRunner);
 
         return newRunner;
@@ -315,5 +318,33 @@ export const createRunner = onCall(
       });
       throw new HttpsError("internal", "Interner Serverfehler.");
     }
+  }
+);
+
+export const setRunnerGoal = onCall(
+  {
+    region: "europe-west3",
+  },
+  async (request) => {
+    requireAuthenticated(request);
+
+    const runnerQuery = await firestore
+      .collection("runners")
+      .where("email", "==", request.auth?.token.email)
+      .limit(1)
+      .get();
+
+    if (runnerQuery.empty) {
+      throw new HttpsError("not-found", "Läufer nicht gefunden.");
+    }
+
+    const runnerRef = runnerQuery.docs[0].ref;
+
+    // Ensure the request contains the 'numer' field with a positive integer
+    const goal = requirePositiveInteger(request.data.goal, "Rundenziel");
+
+    await runnerRef.update({
+      goal,
+    });
   }
 );
