@@ -17,6 +17,8 @@ const firestore = getFirestore();
  */
 function requireAuthenticated(request: CallableRequest): void {
   if (!request.auth) {
+    logger.warn("Rejected unauthenticated request");
+
     throw new HttpsError(
       "unauthenticated",
       "Authentifizierung erforderlich."
@@ -36,6 +38,8 @@ function requireRole(request: CallableRequest, role: string): void {
   requireAuthenticated(request);
 
   if (request.auth?.token.role !== role) {
+    logger.warn("Rejected unauthorized request");
+
     throw new HttpsError(
       "permission-denied",
       "Zugriff verweigert."
@@ -60,6 +64,11 @@ function requirePositiveInteger(
     !Number.isInteger(value) ||
     value <= 0
   ) {
+    logger.warn("Rejected request because of invalid argument", {
+      field,
+      value,
+    });
+
     throw new HttpsError(
       "invalid-argument",
       `Ungültiger Wert für Feld '${field}'.`
@@ -85,6 +94,11 @@ function requireString(
     typeof value !== "string" ||
     value.trim().length === 0
   ) {
+    logger.warn("Rejected request because of invalid argument", {
+      field,
+      value,
+    });
+
     throw new HttpsError(
       "invalid-argument",
       `Ungültiger Wert für Feld '${field}'.`
@@ -174,6 +188,11 @@ export const createLap = onCall(
       };
     } catch (err) {
       if (err instanceof HttpsError) {
+        logger.warn("Failed to create lap", {
+          error: err,
+          number: number,
+        });
+
         throw err;
       }
 
@@ -241,6 +260,11 @@ export const deleteLap = onCall(
       });
     } catch (err) {
       if (err instanceof HttpsError) {
+        logger.warn("Failed to delete lap", {
+          error: err,
+          lapId: lapId,
+        });
+
         throw err;
       }
 
@@ -306,6 +330,14 @@ export const createRunner = onCall(
       return newRunner;
     } catch (err) {
       if (err instanceof HttpsError) {
+        logger.warn("Failed to create runner", {
+          error: err,
+          runner: {
+            name: name,
+            email: email,
+          },
+        });
+
         throw err;
       }
 
